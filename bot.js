@@ -139,7 +139,7 @@ async function construirBlocoJogos(lista) {
       minute: "2-digit",
     });
 
-    bloco += `🎮 ${time1} vs ${time2}\n🏆 ${campeonato}\n🕐 ${horario}\n\n`;
+    bloco += `🎮 ${time1}   vs   ${time2}\n🏆 ${campeonato}\n🕐 ${horario}\n\n`;
     jogosEnviados.add(jogo.id);
   }
 

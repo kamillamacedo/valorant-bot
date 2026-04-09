@@ -26,14 +26,10 @@ const client = new Client({
 // Guardar IDs de jogos enviados para evitar duplicidade
 const jogosEnviados = new Set();
 
-// Ligas que você quer acompanhar
+// Ligas que você quer acompanhar (nomes conforme retornados pela API)
 const ligasPrincipais = [
-  "VCB",
-  "Challengers Brasil",
-  "Game Changers Brasil",
-  "VCT Americas",
-  "Masters",
-  "Champions",
+  "VCT",
+  "VCL",
 ];
 
 async function verificarJogos() {
@@ -48,6 +44,10 @@ async function verificarJogos() {
     );
 
     const jogos = resposta.data;
+
+    // Log temporário para debug
+    const ligasEncontradas = [...new Set(jogos.map((j) => j.league?.name || "desconhecida"))];
+    console.log("Ligas encontradas na API:", ligasEncontradas);
 
     for (const jogo of jogos) {
       const campeonato = jogo.league?.name || "Liga desconhecida";

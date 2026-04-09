@@ -97,7 +97,7 @@ async function verificarJogos() {
     const canal = await client.channels.fetch(CHANNEL_ID);
 
     // --- HOJE ---
-    let mensagemHoje = `\n\n📅 **HOJE — ${dataCompleta(agora)}**\n\n`;
+    let mensagemHoje = `\u200b\n\u200b\n📅 **HOJE — ${dataCompleta(agora)}**\n\n`;
 
     if (jogosHoje.length === 0) {
       mensagemHoje += "😢 Triste, não temos partidas de vava marcadas para hoje.";
@@ -116,7 +116,7 @@ async function verificarJogos() {
     await canal.send(mensagemHoje);
 
     // --- AMANHÃ ---
-    let mensagemAmanha = `\n\n📅 **AMANHÃ — ${dataCompleta(amanha)}**\n\n`;
+    let mensagemAmanha = `\u200b\n\u200b\n📅 **AMANHÃ — ${dataCompleta(amanha)}**\n\n`;
 
     if (jogosAmanha.length === 0) {
       mensagemAmanha += "😢 Triste, não temos partidas de vava marcadas para amanhã.";

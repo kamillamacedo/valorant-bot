@@ -182,7 +182,7 @@ async function verificarJogos() {
     const canal = await client.channels.fetch(CHANNEL_ID);
 
     // --- HOJE ---
-    const headerHoje = `\u200b\n\u200b\n📅 **HOJE — ${dataCompleta(agora)}**`;
+    const headerHoje = `\u200b\n\u200b\n📅 **HOJE — ${dataCompleta(agora)}**\n\u200b`;
     await canal.send(headerHoje);
 
     if (jogosHoje.length === 0) {
@@ -193,7 +193,7 @@ async function verificarJogos() {
     }
 
     // --- AMANHÃ ---
-    const headerAmanha = `\u200b\n\u200b\n📅 **AMANHÃ — ${dataCompleta(amanha)}**`;
+    const headerAmanha = `\u200b\n\u200b\n📅 **AMANHÃ — ${dataCompleta(amanha)}**\n\u200b`;
     await canal.send(headerAmanha);
 
     if (jogosAmanha.length === 0) {

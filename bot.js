@@ -87,9 +87,9 @@ async function temJogadorBrasileiro(teamId) {
   }
 }
 
-// Formata o nome do time: azul (ANSI) se tiver jogadores brasileiros
+// Formata o nome do time: adiciona bandeira se tiver jogadores brasileiros
 function formatarTime(nome, isBrasileiro) {
-  if (isBrasileiro) return `\u001b[34m${nome}\u001b[0m`;
+  if (isBrasileiro) return `🇧🇷 ${nome}`;
   return nome;
 }
 
@@ -167,7 +167,7 @@ async function verificarJogos() {
       await canal.send("😢 Triste, não temos partidas de vava marcadas para hoje.");
     } else {
       const bloco = await construirBlocoJogos(jogosHoje);
-      if (bloco) await canal.send(`\`\`\`ansi\n${bloco}\n\`\`\``);
+      if (bloco) await canal.send(bloco);
     }
 
     // --- AMANHÃ ---
@@ -178,7 +178,7 @@ async function verificarJogos() {
       await canal.send("😢 Triste, não temos partidas de vava marcadas para amanhã.");
     } else {
       const bloco = await construirBlocoJogos(jogosAmanha);
-      if (bloco) await canal.send(`\`\`\`ansi\n${bloco}\n\`\`\``);
+      if (bloco) await canal.send(bloco);
     }
 
   } catch (erro) {

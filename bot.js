@@ -64,33 +64,48 @@ function dataCompleta(data) {
   });
 }
 
-// Verifica se um time tem jogadores brasileiros via API
-async function temJogadorBrasileiro(teamId) {
-  if (!teamId) return false;
+// Busca e armazena em cache os dados dos jogadores de um time
+async function buscarJogadores(teamId) {
+  if (!teamId) return [];
   if (cacheEquipes[teamId] !== undefined) return cacheEquipes[teamId];
 
   try {
     const resposta = await axios.get(
-      `https://api.pandascore.co/valorant/teams/${teamId}`,
+      `https://api.pandascore.co/teams/${teamId}`,
       { headers: { Authorization: `Bearer ${API_KEY}` } }
     );
     const jogadores = resposta.data.players || [];
-    const temBR = jogadores.some((p) => {
-      const nat = (p.nationality || "").toLowerCase();
-      return nat === "br" || nat === "brazil" || nat === "brazilian";
-    });
-    cacheEquipes[teamId] = temBR;
-    return temBR;
-  } catch {
-    cacheEquipes[teamId] = false;
-    return false;
+    cacheEquipes[teamId] = jogadores;
+    return jogadores;
+  } catch (e) {
+    console.log(`Erro ao buscar time ${teamId}:`, e.message);
+    cacheEquipes[teamId] = [];
+    return [];
   }
 }
 
-// Formata o nome do time: adiciona bandeira se tiver jogadores brasileiros
-function formatarTime(nome, isBrasileiro) {
-  if (isBrasileiro) return `🇧🇷 ${nome}`;
-  return nome;
+// Verifica se um time tem jogadores brasileiros
+async function temJogadorBrasileiro(teamId) {
+  const jogadores = await buscarJogadores(teamId);
+  return jogadores.some((p) => {
+    const nat = (p.nationality || "").toLowerCase();
+    return nat.includes("br") || nat.includes("brazil");
+  });
+}
+
+// Verifica se a liga é feminina pelo nome
+function ligaFeminina(nomeLiga) {
+  return nomeLiga.toLowerCase().includes("game changers");
+}
+
+// Formata o nome do time com os emotes correspondentes
+async function formatarTime(nome, teamId, nomeLiga) {
+  const br = await temJogadorBrasileiro(teamId);
+  const mulher = ligaFeminina(nomeLiga);
+  let prefixo = "";
+  if (br) prefixo += "🇧🇷 ";
+  if (mulher) prefixo += "👩 ";
+  return `${prefixo}${nome}`;
 }
 
 async function construirBlocoJogos(lista) {
@@ -106,11 +121,8 @@ async function construirBlocoJogos(lista) {
     const teamId1 = jogo.opponents[0]?.opponent?.id;
     const teamId2 = jogo.opponents[1]?.opponent?.id;
 
-    const br1 = await temJogadorBrasileiro(teamId1);
-    const br2 = await temJogadorBrasileiro(teamId2);
-
-    const time1 = formatarTime(time1Nome, br1);
-    const time2 = formatarTime(time2Nome, br2);
+    const time1 = await formatarTime(time1Nome, teamId1, campeonato);
+    const time2 = await formatarTime(time2Nome, teamId2, campeonato);
 
     const horario = new Date(jogo.begin_at).toLocaleTimeString("pt-BR", {
       hour: "2-digit",

@@ -44,6 +44,23 @@ function ligaDesejada(nomeLiga) {
   return palavrasChave.some((palavra) => nome.includes(palavra));
 }
 
+function mesmodia(dataA, dataB) {
+  return (
+    dataA.getFullYear() === dataB.getFullYear() &&
+    dataA.getMonth() === dataB.getMonth() &&
+    dataA.getDate() === dataB.getDate()
+  );
+}
+
+function dataCompleta(data) {
+  return data.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 async function verificarJogos() {
   try {
     const resposta = await axios.get(
@@ -57,36 +74,66 @@ async function verificarJogos() {
 
     const jogos = resposta.data;
 
+    const agora = new Date();
+    const amanha = new Date(agora);
+    amanha.setDate(amanha.getDate() + 1);
+
+    const jogosHoje = [];
+    const jogosAmanha = [];
+
     for (const jogo of jogos) {
       const campeonato = jogo.league?.name || "Liga desconhecida";
-
-      // Ignora jogos que não são das ligas desejadas
       if (!ligaDesejada(campeonato)) continue;
 
-      const id = jogo.id;
-      if (jogosEnviados.has(id)) continue;
+      const dataJogo = new Date(jogo.begin_at);
 
-      const time1 = jogo.opponents[0]?.opponent?.name || "TBD";
-      const time2 = jogo.opponents[1]?.opponent?.name || "TBD";
-
-      const data = new Date(jogo.begin_at).toLocaleString("pt-BR");
-
-      const mensagem = `🎮 PARTIDA DE VALORANT
-
-🏆 Liga:
-${campeonato}
-
-⚔️ Times:
-${time1} vs ${time2}
-
-📅 Data:
-${data}`;
-
-      const canal = await client.channels.fetch(CHANNEL_ID);
-      await canal.send(mensagem);
-
-      jogosEnviados.add(id);
+      if (mesmodia(dataJogo, agora)) {
+        jogosHoje.push(jogo);
+      } else if (mesmodia(dataJogo, amanha)) {
+        jogosAmanha.push(jogo);
+      }
     }
+
+    const canal = await client.channels.fetch(CHANNEL_ID);
+
+    // --- HOJE ---
+    let mensagemHoje = `📅 **HOJE — ${dataCompleta(agora)}**\n\n`;
+
+    if (jogosHoje.length === 0) {
+      mensagemHoje += "😢 Triste, não temos partidas de vava marcadas para hoje.";
+    } else {
+      for (const jogo of jogosHoje) {
+        if (jogosEnviados.has(jogo.id)) continue;
+        const campeonato = jogo.league?.name || "Liga desconhecida";
+        const time1 = jogo.opponents[0]?.opponent?.name || "TBD";
+        const time2 = jogo.opponents[1]?.opponent?.name || "TBD";
+        const horario = new Date(jogo.begin_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        mensagemHoje += `🎮 **${time1} vs ${time2}**\n🏆 ${campeonato}\n🕐 ${horario}\n\n`;
+        jogosEnviados.add(jogo.id);
+      }
+    }
+
+    await canal.send(mensagemHoje.trim());
+
+    // --- AMANHÃ ---
+    let mensagemAmanha = `📅 **AMANHÃ — ${dataCompleta(amanha)}**\n\n`;
+
+    if (jogosAmanha.length === 0) {
+      mensagemAmanha += "😢 Triste, não temos partidas de vava marcadas para amanhã.";
+    } else {
+      for (const jogo of jogosAmanha) {
+        if (jogosEnviados.has(jogo.id)) continue;
+        const campeonato = jogo.league?.name || "Liga desconhecida";
+        const time1 = jogo.opponents[0]?.opponent?.name || "TBD";
+        const time2 = jogo.opponents[1]?.opponent?.name || "TBD";
+        const horario = new Date(jogo.begin_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        mensagemAmanha += `🎮 **${time1} vs ${time2}**\n🏆 ${campeonato}\n🕐 ${horario}\n\n`;
+        jogosEnviados.add(jogo.id);
+      }
+    }
+
+    await canal.send(mensagemAmanha.trim());
+
   } catch (erro) {
     console.log("Erro ao buscar jogos:", erro.message);
   }

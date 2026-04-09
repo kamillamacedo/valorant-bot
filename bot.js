@@ -3,6 +3,17 @@ require("dotenv").config();
 const { Client, GatewayIntentBits } = require("discord.js");
 const axios = require("axios");
 const cron = require("node-cron");
+const http = require("http");
+
+// Servidor HTTP para manter o bot online via UptimeRobot
+http
+  .createServer((req, res) => {
+    res.writeHead(200);
+    res.end("Bot online!");
+  })
+  .listen(3000, () => {
+    console.log("Servidor HTTP rodando na porta 3000");
+  });
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;

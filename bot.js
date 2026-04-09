@@ -26,11 +26,23 @@ const client = new Client({
 // Guardar IDs de jogos enviados para evitar duplicidade
 const jogosEnviados = new Set();
 
-// Ligas que você quer acompanhar (nomes conforme retornados pela API)
-const ligasPrincipais = [
-  "VCT",
-  "VCL",
+// Palavras-chave para filtrar as ligas desejadas
+const palavrasChave = [
+  "vct",
+  "vcl",
+  "brasil",
+  "brazil",
+  "americas",
+  "masters",
+  "champions",
+  "game changers",
+  "challengers",
 ];
+
+function ligaDesejada(nomeLiga) {
+  const nome = nomeLiga.toLowerCase();
+  return palavrasChave.some((palavra) => nome.includes(palavra));
+}
 
 async function verificarJogos() {
   try {
@@ -45,15 +57,11 @@ async function verificarJogos() {
 
     const jogos = resposta.data;
 
-    // Log temporário para debug
-    const ligasEncontradas = [...new Set(jogos.map((j) => j.league?.name || "desconhecida"))];
-    console.log("Ligas encontradas na API:", ligasEncontradas);
-
     for (const jogo of jogos) {
       const campeonato = jogo.league?.name || "Liga desconhecida";
 
-      // Ignora jogos que não são das ligas principais
-      if (!ligasPrincipais.includes(campeonato)) continue;
+      // Ignora jogos que não são das ligas desejadas
+      if (!ligaDesejada(campeonato)) continue;
 
       const id = jogo.id;
       if (jogosEnviados.has(id)) continue;

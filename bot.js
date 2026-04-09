@@ -26,6 +26,9 @@ const client = new Client({
 // Guardar IDs de jogos enviados para evitar duplicidade
 const jogosEnviados = new Set();
 
+// Cache de equipes já consultadas
+const cacheEquipes = {};
+
 // Palavras-chave para filtrar as ligas desejadas
 const palavrasChave = [
   "vct",
@@ -61,6 +64,66 @@ function dataCompleta(data) {
   });
 }
 
+// Verifica se um time tem jogadores brasileiros via API
+async function temJogadorBrasileiro(teamId) {
+  if (!teamId) return false;
+  if (cacheEquipes[teamId] !== undefined) return cacheEquipes[teamId];
+
+  try {
+    const resposta = await axios.get(
+      `https://api.pandascore.co/valorant/teams/${teamId}`,
+      { headers: { Authorization: `Bearer ${API_KEY}` } }
+    );
+    const jogadores = resposta.data.players || [];
+    const temBR = jogadores.some((p) => {
+      const nat = (p.nationality || "").toLowerCase();
+      return nat === "br" || nat === "brazil" || nat === "brazilian";
+    });
+    cacheEquipes[teamId] = temBR;
+    return temBR;
+  } catch {
+    cacheEquipes[teamId] = false;
+    return false;
+  }
+}
+
+// Formata o nome do time: azul (ANSI) se tiver jogadores brasileiros
+function formatarTime(nome, isBrasileiro) {
+  if (isBrasileiro) return `\u001b[34m${nome}\u001b[0m`;
+  return nome;
+}
+
+async function construirBlocoJogos(lista) {
+  if (lista.length === 0) return null;
+
+  let bloco = "";
+  for (const jogo of lista) {
+    if (jogosEnviados.has(jogo.id)) continue;
+
+    const campeonato = jogo.league?.name || "Liga desconhecida";
+    const time1Nome = jogo.opponents[0]?.opponent?.name || "TBD";
+    const time2Nome = jogo.opponents[1]?.opponent?.name || "TBD";
+    const teamId1 = jogo.opponents[0]?.opponent?.id;
+    const teamId2 = jogo.opponents[1]?.opponent?.id;
+
+    const br1 = await temJogadorBrasileiro(teamId1);
+    const br2 = await temJogadorBrasileiro(teamId2);
+
+    const time1 = formatarTime(time1Nome, br1);
+    const time2 = formatarTime(time2Nome, br2);
+
+    const horario = new Date(jogo.begin_at).toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    bloco += `🎮 ${time1} vs ${time2}\n🏆 ${campeonato}\n🕐 ${horario}\n\n`;
+    jogosEnviados.add(jogo.id);
+  }
+
+  return bloco.trim() || null;
+}
+
 async function verificarJogos() {
   try {
     const resposta = await axios.get(
@@ -69,7 +132,7 @@ async function verificarJogos() {
         headers: {
           Authorization: `Bearer ${API_KEY}`,
         },
-      },
+      }
     );
 
     const jogos = resposta.data;
@@ -97,42 +160,26 @@ async function verificarJogos() {
     const canal = await client.channels.fetch(CHANNEL_ID);
 
     // --- HOJE ---
-    let mensagemHoje = `\u200b\n\u200b\n📅 **HOJE — ${dataCompleta(agora)}**\n\n`;
+    const headerHoje = `\u200b\n\u200b\n📅 **HOJE — ${dataCompleta(agora)}**`;
+    await canal.send(headerHoje);
 
     if (jogosHoje.length === 0) {
-      mensagemHoje += "😢 Triste, não temos partidas de vava marcadas para hoje.";
+      await canal.send("😢 Triste, não temos partidas de vava marcadas para hoje.");
     } else {
-      for (const jogo of jogosHoje) {
-        if (jogosEnviados.has(jogo.id)) continue;
-        const campeonato = jogo.league?.name || "Liga desconhecida";
-        const time1 = jogo.opponents[0]?.opponent?.name || "TBD";
-        const time2 = jogo.opponents[1]?.opponent?.name || "TBD";
-        const horario = new Date(jogo.begin_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-        mensagemHoje += `🎮 **${time1} vs ${time2}**\n🏆 ${campeonato}\n🕐 ${horario}\n\n`;
-        jogosEnviados.add(jogo.id);
-      }
+      const bloco = await construirBlocoJogos(jogosHoje);
+      if (bloco) await canal.send(`\`\`\`ansi\n${bloco}\n\`\`\``);
     }
-
-    await canal.send(mensagemHoje);
 
     // --- AMANHÃ ---
-    let mensagemAmanha = `\u200b\n\u200b\n📅 **AMANHÃ — ${dataCompleta(amanha)}**\n\n`;
+    const headerAmanha = `\u200b\n\u200b\n📅 **AMANHÃ — ${dataCompleta(amanha)}**`;
+    await canal.send(headerAmanha);
 
     if (jogosAmanha.length === 0) {
-      mensagemAmanha += "😢 Triste, não temos partidas de vava marcadas para amanhã.";
+      await canal.send("😢 Triste, não temos partidas de vava marcadas para amanhã.");
     } else {
-      for (const jogo of jogosAmanha) {
-        if (jogosEnviados.has(jogo.id)) continue;
-        const campeonato = jogo.league?.name || "Liga desconhecida";
-        const time1 = jogo.opponents[0]?.opponent?.name || "TBD";
-        const time2 = jogo.opponents[1]?.opponent?.name || "TBD";
-        const horario = new Date(jogo.begin_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-        mensagemAmanha += `🎮 **${time1} vs ${time2}**\n🏆 ${campeonato}\n🕐 ${horario}\n\n`;
-        jogosEnviados.add(jogo.id);
-      }
+      const bloco = await construirBlocoJogos(jogosAmanha);
+      if (bloco) await canal.send(`\`\`\`ansi\n${bloco}\n\`\`\``);
     }
-
-    await canal.send(mensagemAmanha);
 
   } catch (erro) {
     console.log("Erro ao buscar jogos:", erro.message);

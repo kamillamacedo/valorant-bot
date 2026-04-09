@@ -93,15 +93,25 @@ async function temJogadorBrasileiro(teamId) {
   });
 }
 
+// Times femininos jogando em ligas masculinas
+const timesFemininos = [
+  "team liquid visa",
+];
+
 // Verifica se a liga é feminina pelo nome
 function ligaFeminina(nomeLiga) {
   return nomeLiga.toLowerCase().includes("game changers");
 }
 
+// Verifica se o time é feminino pelo nome (lista manual)
+function timeFemininoManual(nomeTime) {
+  return timesFemininos.includes(nomeTime.toLowerCase());
+}
+
 // Formata o nome do time com os emotes correspondentes
 async function formatarTime(nome, teamId, nomeLiga) {
   const br = await temJogadorBrasileiro(teamId);
-  const mulher = ligaFeminina(nomeLiga);
+  const mulher = ligaFeminina(nomeLiga) || timeFemininoManual(nome);
   let prefixo = "";
   if (br) prefixo += "🇧🇷 ";
   if (mulher) prefixo += "👩 ";

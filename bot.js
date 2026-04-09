@@ -90,8 +90,8 @@ client.once("clientReady", () => {
   // Primeira checagem assim que o bot inicia
   verificarJogos();
 
-  // Atualizações 2x por dia: às 09:00 e 14:00
-  cron.schedule("0 9,14 * * *", () => {
+  // Atualizações 3x por dia: às 09:00, 14:00 e 18:00
+  cron.schedule("0 9,14,18 * * *", () => {
     verificarJogos();
   });
 });

@@ -1,0 +1,7 @@
+node_modules/
+.env
+jogos_enviados.json
+.cache/
+.upm/
+.local/
+attached_assets/

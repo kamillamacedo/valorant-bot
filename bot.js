@@ -5,14 +5,16 @@ const axios = require("axios");
 const cron = require("node-cron");
 const http = require("http");
 
+const PORT = process.env.PORT || 3000;
+
 // Servidor HTTP para manter o bot online via UptimeRobot
 http
   .createServer((req, res) => {
-    res.writeHead(200);
+    res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("Bot online!");
   })
-  .listen(3000, () => {
-    console.log("Servidor HTTP rodando na porta 3000");
+  .listen(PORT, "0.0.0.0", () => {
+    console.log("Servidor web ativo");
   });
 
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -113,8 +115,8 @@ async function formatarTime(nome, teamId, nomeLiga) {
   const br = await temJogadorBrasileiro(teamId);
   const mulher = ligaFeminina(nomeLiga) || timeFemininoManual(nome);
   let prefixo = "";
-  if (br) prefixo += "🇧🇷  ";
-  if (mulher) prefixo += "👩  ";
+  if (br) prefixo += "🇧🇷 ";
+  if (mulher) prefixo += "👩 ";
   return `${prefixo}${nome}`;
 }
 
@@ -139,7 +141,7 @@ async function construirBlocoJogos(lista) {
       minute: "2-digit",
     });
 
-    bloco += `🎮  ${time1}   vs   ${time2}\n🏆  ${campeonato}\n🕐  ${horario}\n\n`;
+    bloco += `🎮 ${time1}   vs   ${time2}\n🏆 ${campeonato}\n🕐 ${horario}\n\n`;
     jogosEnviados.add(jogo.id);
   }
 
@@ -182,7 +184,7 @@ async function verificarJogos() {
     const canal = await client.channels.fetch(CHANNEL_ID);
 
     // --- HOJE ---
-    const headerHoje = `\u200b\n\u200b\n📅 **HOJE — ${dataCompleta(agora)}**\n\u200b`;
+    const headerHoje = `\u200b\n\u200b\n📅 **HOJE — ${dataCompleta(agora)}**`;
     await canal.send(headerHoje);
 
     if (jogosHoje.length === 0) {
@@ -193,7 +195,7 @@ async function verificarJogos() {
     }
 
     // --- AMANHÃ ---
-    const headerAmanha = `\u200b\n\u200b\n📅 **AMANHÃ — ${dataCompleta(amanha)}**\n\u200b`;
+    const headerAmanha = `\u200b\n\u200b\n📅 **AMANHÃ — ${dataCompleta(amanha)}**`;
     await canal.send(headerAmanha);
 
     if (jogosAmanha.length === 0) {

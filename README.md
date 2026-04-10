@@ -62,7 +62,9 @@ CHANNEL_ID=id_do_canal
 PANDASCORE_TOKEN=sua_api_key
 PORT=3000
 
-📌 Agendamento automático
+---
+
+##📌 Agendamento automático
 
 O bot executa verificações nos seguintes horários:
 
@@ -72,20 +74,28 @@ O bot executa verificações nos seguintes horários:
 
 Caso o bot fique offline, ele recupera execuções perdidas automaticamente.
 
-🌐 Servidor HTTP
+---
+
+##🌐 Servidor HTTP
 
 O bot mantém um servidor HTTP simples ativo para evitar sleep em hospedagens gratuitas:
 
 Endpoint: /
 Resposta: Bot online!
-💡 Objetivo
+---
+
+##💡 Objetivo
 
 O objetivo do projeto é manter comunidades de Discord atualizadas automaticamente sobre partidas competitivas de Valorant, sem necessidade de atualização manual.
 
-📄 Licença
+---
+
+##📄 Licença
 
 Projeto de uso pessoal e educacional.
 
-👤 Autor
+---
+
+##👤 Autor
 
 Desenvolvido por Kamilla Macedo

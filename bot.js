@@ -239,14 +239,50 @@ async function verificarJogos() {
   }
 }
 
+// Horários agendados de verificação
+const SLOTS_HORARIO = [9, 14, 18];
+
+function idSlot(hora) {
+  const hoje = new Date().toISOString().split("T")[0];
+  return `slot-${hoje}-${String(hora).padStart(2, "0")}`;
+}
+
+function marcarSlotExecutado(hora) {
+  registrarJogoEnviado(idSlot(hora));
+}
+
+// Verifica na inicialização se algum horário passou sem envio
+async function verificarSlotsPerdidos() {
+  const horaAtual = new Date().getHours();
+  const slotsPerdidos = SLOTS_HORARIO.filter(
+    (h) => horaAtual >= h && !jogosEnviados.has(idSlot(h))
+  );
+
+  if (slotsPerdidos.length > 0) {
+    console.log(`Slots perdidos detectados: ${slotsPerdidos.join("h, ")}h. Recuperando...`);
+    await verificarJogos();
+    slotsPerdidos.forEach((h) => marcarSlotExecutado(h));
+  } else {
+    console.log("Nenhum slot perdido. Bot em dia.");
+  }
+}
+
 client.once("clientReady", () => {
   carregarJogosEnviados();
   console.log("Bot rodando!");
 
-  verificarJogos();
+  // Verifica slots perdidos ao iniciar
+  verificarSlotsPerdidos();
 
-  cron.schedule("0 9,14,18 * * *", () => {
-    verificarJogos();
+  // Agenda as verificações diárias e marca o slot como executado
+  cron.schedule("0 9 * * *", () => {
+    verificarJogos().then(() => marcarSlotExecutado(9));
+  });
+  cron.schedule("0 14 * * *", () => {
+    verificarJogos().then(() => marcarSlotExecutado(14));
+  });
+  cron.schedule("0 18 * * *", () => {
+    verificarJogos().then(() => marcarSlotExecutado(18));
   });
 });
 

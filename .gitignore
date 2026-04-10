@@ -1,5 +1,6 @@
 node_modules/
 .env
+attached_assets/
 jogos_enviados.json
 .cache/
 .upm/

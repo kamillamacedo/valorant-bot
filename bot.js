@@ -4,6 +4,7 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const axios = require("axios");
 const cron = require("node-cron");
 const http = require("http");
+const fs = require("fs");
 
 const PORT = process.env.PORT || 3000;
 
@@ -25,13 +26,40 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 
-// Guardar IDs de jogos enviados para evitar duplicidade
+// --- Persistência de IDs enviados ---
+const ARQUIVO_ENVIADOS = "jogos_enviados.json";
+let jogosEnviadosMeta = [];
 const jogosEnviados = new Set();
 
-// Cache de equipes já consultadas
+function carregarJogosEnviados() {
+  try {
+    if (fs.existsSync(ARQUIVO_ENVIADOS)) {
+      const dados = JSON.parse(fs.readFileSync(ARQUIVO_ENVIADOS, "utf8"));
+      const limite = Date.now() - 2 * 24 * 60 * 60 * 1000;
+      jogosEnviadosMeta = dados.filter((e) => e.ts > limite);
+      jogosEnviadosMeta.forEach((e) => jogosEnviados.add(e.id));
+      console.log(`${jogosEnviados.size} IDs carregados do arquivo.`);
+    }
+  } catch (e) {
+    console.log("Erro ao carregar jogos enviados:", e.message);
+  }
+}
+
+function registrarJogoEnviado(id) {
+  if (jogosEnviados.has(id)) return;
+  jogosEnviados.add(id);
+  jogosEnviadosMeta.push({ id, ts: Date.now() });
+  try {
+    fs.writeFileSync(ARQUIVO_ENVIADOS, JSON.stringify(jogosEnviadosMeta));
+  } catch (e) {
+    console.log("Erro ao salvar jogos enviados:", e.message);
+  }
+}
+
+// --- Cache de equipes ---
 const cacheEquipes = {};
 
-// Palavras-chave para filtrar as ligas desejadas
+// --- Palavras-chave para filtrar ligas ---
 const palavrasChave = [
   "vct",
   "vcl",
@@ -66,7 +94,7 @@ function dataCompleta(data) {
   });
 }
 
-// Busca e armazena em cache os dados dos jogadores de um time
+// --- Dados dos jogadores ---
 async function buscarJogadores(teamId) {
   if (!teamId) return [];
   if (cacheEquipes[teamId] !== undefined) return cacheEquipes[teamId];
@@ -86,7 +114,6 @@ async function buscarJogadores(teamId) {
   }
 }
 
-// Verifica se um time tem jogadores brasileiros
 async function temJogadorBrasileiro(teamId) {
   const jogadores = await buscarJogadores(teamId);
   return jogadores.some((p) => {
@@ -95,38 +122,29 @@ async function temJogadorBrasileiro(teamId) {
   });
 }
 
-// Times femininos jogando em ligas masculinas
-const timesFemininos = [
-  "team liquid visa",
-];
+// --- Times femininos em ligas masculinas ---
+const timesFemininos = ["team liquid visa"];
 
-// Verifica se a liga é feminina pelo nome
 function ligaFeminina(nomeLiga) {
   return nomeLiga.toLowerCase().includes("game changers");
 }
 
-// Verifica se o time é feminino pelo nome (lista manual)
 function timeFemininoManual(nomeTime) {
   return timesFemininos.includes(nomeTime.toLowerCase());
 }
 
-// Formata o nome do time com os emotes correspondentes
 async function formatarTime(nome, teamId, nomeLiga) {
   const br = await temJogadorBrasileiro(teamId);
   const mulher = ligaFeminina(nomeLiga) || timeFemininoManual(nome);
   let prefixo = "";
-  if (br) prefixo += "🇧🇷 ";
-  if (mulher) prefixo += "👩 ";
+  if (br) prefixo += "🇧🇷  ";
+  if (mulher) prefixo += "👩  ";
   return `${prefixo}${nome}`;
 }
 
 async function construirBlocoJogos(lista) {
-  if (lista.length === 0) return null;
-
   let bloco = "";
   for (const jogo of lista) {
-    if (jogosEnviados.has(jogo.id)) continue;
-
     const campeonato = jogo.league?.name || "Liga desconhecida";
     const time1Nome = jogo.opponents[0]?.opponent?.name || "TBD";
     const time2Nome = jogo.opponents[1]?.opponent?.name || "TBD";
@@ -141,10 +159,9 @@ async function construirBlocoJogos(lista) {
       minute: "2-digit",
     });
 
-    bloco += `🎮 ${time1}   vs   ${time2}\n🏆 ${campeonato}\n🕐 ${horario}\n\n`;
-    jogosEnviados.add(jogo.id);
+    bloco += `🎮  ${time1}   vs   ${time2}\n🏆  ${campeonato}\n🕐  ${horario}\n\n`;
+    registrarJogoEnviado(jogo.id);
   }
-
   return bloco.trim() || null;
 }
 
@@ -152,18 +169,18 @@ async function verificarJogos() {
   try {
     const resposta = await axios.get(
       "https://api.pandascore.co/valorant/matches/upcoming",
-      {
-        headers: {
-          Authorization: `Bearer ${API_KEY}`,
-        },
-      }
+      { headers: { Authorization: `Bearer ${API_KEY}` } }
     );
 
     const jogos = resposta.data;
-
     const agora = new Date();
     const amanha = new Date(agora);
     amanha.setDate(amanha.getDate() + 1);
+
+    const dataHojeStr = agora.toISOString().split("T")[0];
+    const dataAmanhaStr = amanha.toISOString().split("T")[0];
+    const idSadHoje = `sad-hoje-${dataHojeStr}`;
+    const idSadAmanha = `sad-amanha-${dataAmanhaStr}`;
 
     const jogosHoje = [];
     const jogosAmanha = [];
@@ -173,36 +190,48 @@ async function verificarJogos() {
       if (!ligaDesejada(campeonato)) continue;
 
       const dataJogo = new Date(jogo.begin_at);
+      if (mesmodia(dataJogo, agora)) jogosHoje.push(jogo);
+      else if (mesmodia(dataJogo, amanha)) jogosAmanha.push(jogo);
+    }
 
-      if (mesmodia(dataJogo, agora)) {
-        jogosHoje.push(jogo);
-      } else if (mesmodia(dataJogo, amanha)) {
-        jogosAmanha.push(jogo);
-      }
+    // Filtra apenas jogos ainda não enviados
+    const novosHoje = jogosHoje.filter((j) => !jogosEnviados.has(j.id));
+    const novosAmanha = jogosAmanha.filter((j) => !jogosEnviados.has(j.id));
+    const enviarSadHoje = jogosHoje.length === 0 && !jogosEnviados.has(idSadHoje);
+    const enviarSadAmanha = jogosAmanha.length === 0 && !jogosEnviados.has(idSadAmanha);
+
+    // Se não há nada novo para enviar, sai sem postar nada
+    if (!novosHoje.length && !novosAmanha.length && !enviarSadHoje && !enviarSadAmanha) {
+      console.log("Nenhuma novidade para enviar.");
+      return;
     }
 
     const canal = await client.channels.fetch(CHANNEL_ID);
 
     // --- HOJE ---
-    const headerHoje = `\u200b\n\u200b\n📅 **HOJE — ${dataCompleta(agora)}**`;
-    await canal.send(headerHoje);
-
-    if (jogosHoje.length === 0) {
-      await canal.send("😢 Triste, não temos partidas de vava marcadas para hoje.");
-    } else {
-      const bloco = await construirBlocoJogos(jogosHoje);
-      if (bloco) await canal.send(bloco);
+    if (novosHoje.length > 0 || enviarSadHoje) {
+      const headerHoje = `\u200b\n\u200b\n📅 **HOJE — ${dataCompleta(agora)}**\n\u200b`;
+      await canal.send(headerHoje);
+      if (enviarSadHoje) {
+        await canal.send("😢 Triste, não temos partidas de vava marcadas para hoje.");
+        registrarJogoEnviado(idSadHoje);
+      } else {
+        const bloco = await construirBlocoJogos(novosHoje);
+        if (bloco) await canal.send(bloco);
+      }
     }
 
     // --- AMANHÃ ---
-    const headerAmanha = `\u200b\n\u200b\n📅 **AMANHÃ — ${dataCompleta(amanha)}**`;
-    await canal.send(headerAmanha);
-
-    if (jogosAmanha.length === 0) {
-      await canal.send("😢 Triste, não temos partidas de vava marcadas para amanhã.");
-    } else {
-      const bloco = await construirBlocoJogos(jogosAmanha);
-      if (bloco) await canal.send(bloco);
+    if (novosAmanha.length > 0 || enviarSadAmanha) {
+      const headerAmanha = `\u200b\n\u200b\n📅 **AMANHÃ — ${dataCompleta(amanha)}**\n\u200b`;
+      await canal.send(headerAmanha);
+      if (enviarSadAmanha) {
+        await canal.send("😢 Triste, não temos partidas de vava marcadas para amanhã.");
+        registrarJogoEnviado(idSadAmanha);
+      } else {
+        const bloco = await construirBlocoJogos(novosAmanha);
+        if (bloco) await canal.send(bloco);
+      }
     }
 
   } catch (erro) {
@@ -211,16 +240,14 @@ async function verificarJogos() {
 }
 
 client.once("clientReady", () => {
+  carregarJogosEnviados();
   console.log("Bot rodando!");
 
-  // Primeira checagem assim que o bot inicia
   verificarJogos();
 
-  // Atualizações 3x por dia: às 09:00, 14:00 e 18:00
   cron.schedule("0 9,14,18 * * *", () => {
     verificarJogos();
   });
 });
 
-// Logar o bot
 client.login(TOKEN);

@@ -1,101 +1,115 @@
-# 🎮 Bot de Partidas - Valorant (PandaScore)
+# 🎮 Valorant Match Bot (PandaScore)
 
-Bot de Discord desenvolvido em Node.js para monitoramento automático de partidas profissionais de :contentReference[oaicite:0]{index=0}.
+A Discord bot built with Node.js that automatically monitors professional Valorant matches.
 
-Ele utiliza a API da PandaScore para buscar jogos e envia atualizações programadas diretamente em um canal do servidor, mantendo a comunidade informada sobre partidas do dia e do dia seguinte.
-
----
-
-## 🚀 Funcionalidades
-
-- 📅 Envio automático de partidas de hoje e amanhã
-- ⏰ Execução programada (09h, 14h e 18h)
-- 🎯 Filtro de ligas relevantes (VCT, Challengers, Masters, Champions, etc.)
-- 🇧🇷 Destaque para jogadores brasileiros nos times
-- 👩 Identificação de times femininos (Game Changers e similares)
-- 🧠 Evita duplicação de mensagens (persistência em arquivo JSON)
-- 📊 Organização por data com mensagens estruturadas no canal
-- 🌐 Servidor HTTP para manter o bot online (UptimeRobot)
+It uses the PandaScore API to fetch match data and sends scheduled updates directly to a Discord channel, keeping the community informed about upcoming matches for today and the next day.
 
 ---
 
-## 🧰 Tecnologias utilizadas
+## 🚀 Features
 
-- Node.js
-- discord.js
-- axios
-- node-cron
-- dotenv
-- PandaScore API
-
----
-
-## 📡 Como funciona
-
-O bot realiza requisições periódicas à API da PandaScore para buscar partidas futuras de Valorant. Em seguida:
-
-1. Filtra ligas relevantes (VCT, regionais e internacionais)
-2. Separa partidas de hoje e amanhã
-3. Formata os jogos com horário, times e campeonato
-4. Envia mensagens no canal configurado no Discord
-5. Registra os jogos enviados para evitar duplicações
+- 📅 Automatic updates for today's and tomorrow's matches  
+- ⏰ Scheduled execution (9 AM, 2 PM, and 6 PM)  
+- 🎯 Filtering of relevant leagues (VCT, Challengers, Masters, Champions, etc.)  
+- 🇧🇷 Highlights Brazilian players in teams  
+- 👩 Identifies women's teams (Game Changers and similar)  
+- 🧠 Prevents duplicate messages (JSON-based persistence)  
+- 📊 Organized messages grouped by date  
+- 🌐 Lightweight HTTP server to keep the bot alive (UptimeRobot support)  
 
 ---
 
-## 🗂 Estrutura de persistência
+## 🧰 Tech Stack
 
-O bot utiliza um arquivo local:
+- Node.js  
+- discord.js  
+- axios  
+- node-cron  
+- dotenv  
+- PandaScore API  
 
+---
+
+## 📡 How It Works
+
+The bot periodically requests data from the PandaScore API to retrieve upcoming Valorant matches.
+
+It then:
+
+1. Filters relevant leagues (regional and international)  
+2. Separates matches for today and tomorrow  
+3. Formats match details (time, teams, tournament)  
+4. Sends structured messages to a Discord channel  
+5. Stores sent matches to avoid duplication  
+
+---
+
+## 🗂 Persistence
+
+The bot uses a local file:
+
+```text
 jogos_enviados.json
+```
 
-Esse arquivo garante que:
-- Jogos não sejam enviados duas vezes
-- Dados antigos sejam limpos automaticamente (últimas 48h)
+This ensures:
+- Matches are not sent more than once
+- Old data is automatically cleaned (last 48 hours)
 
 ---
 
-## ⚙️ Variáveis de ambiente (.env)
+## ⚙️ Environment Variables (.env)
 
 ```env
-DISCORD_TOKEN=seu_token_do_bot
-CHANNEL_ID=id_do_canal
-PANDASCORE_TOKEN=sua_api_key
+DISCORD_TOKEN=your_bot_token
+CHANNEL_ID=your_channel_id
+PANDASCORE_TOKEN=your_api_key
 PORT=3000
+```
 
 ---
 
-##📌 Agendamento automático
+## 📌 Scheduling
 
-O bot executa verificações nos seguintes horários:
+The bot runs checks at:
 
 🕘 09:00
 🕑 14:00
 🕕 18:00
 
-Caso o bot fique offline, ele recupera execuções perdidas automaticamente.
+If the bot goes offline, it automatically recovers missed executions.
 
 ---
 
-##🌐 Servidor HTTP
+## 🌐 HTTP Server
 
-O bot mantém um servidor HTTP simples ativo para evitar sleep em hospedagens gratuitas:
+A simple HTTP server is used to prevent the bot from sleeping on free hosting services.
 
 Endpoint: /
-Resposta: Bot online!
+Response: Bot online!
 ---
 
-##💡 Objetivo
+## 💡 Purpose
 
-O objetivo do projeto é manter comunidades de Discord atualizadas automaticamente sobre partidas competitivas de Valorant, sem necessidade de atualização manual.
-
----
-
-##📄 Licença
-
-Projeto de uso pessoal e educacional.
+The goal of this project is to automate match updates for Valorant communities on Discord, removing the need for manual tracking
 
 ---
 
-##👤 Autor
+## 📚 Learning Note
 
-Desenvolvido por Kamilla Macedo
+This project was developed with the support of AI tools.
+My focus was on understanding the logic, adapting the code, and learning how each part works in practice.
+
+I’m continuously improving my knowledge to build and extend projects like this more independently.
+
+---
+
+## 📄 License
+
+Personal and educational use.
+
+---
+
+## 👤 Author
+
+Developed by Kamilla Macedo
